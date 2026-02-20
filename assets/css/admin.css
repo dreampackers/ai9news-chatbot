@@ -1,0 +1,367 @@
+/* ============================================================
+   AI9News Chatbot — Admin Styles
+   ============================================================ */
+
+/* ── Layout ──────────────────────────────────── */
+.ai9cb-wrap {
+  max-width: 1280px;
+}
+
+.ai9cb-wrap h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.ai9cb-wrap .ai9cb-subtitle {
+  color: #64748b;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.ai9cb-count {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+
+/* ── KPI Cards ───────────────────────────────── */
+.ai9cb-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ai9cb-kpi {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  transition: box-shadow .15s;
+}
+
+.ai9cb-kpi:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+.ai9cb-kpi-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.ai9cb-kpi-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.ai9cb-kpi-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.ai9cb-kpi-urgent.has-urgent {
+  border-color: #fca5a5;
+  background: #fff5f5;
+}
+
+.ai9cb-kpi-urgent.has-urgent .ai9cb-kpi-value {
+  color: #dc2626;
+}
+
+/* ── Chart cards ─────────────────────────────── */
+.ai9cb-charts-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ai9cb-chart-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+
+.ai9cb-chart-card h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 15px;
+  color: #1e293b;
+}
+
+.ai9cb-chart-wide {
+  /* used inside .ai9cb-charts-row */
+}
+
+/* ── Funnel visualization ────────────────────── */
+.ai9cb-funnel-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.ai9cb-funnel-step {
+  border: 2px solid;
+  border-radius: 8px;
+  padding: 10px 20px;
+  text-align: center;
+  transition: transform .15s;
+  cursor: default;
+}
+
+.ai9cb-funnel-step:hover {
+  transform: scaleX(1.02);
+}
+
+.ai9cb-funnel-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.ai9cb-funnel-count {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 2px 0;
+}
+
+.ai9cb-funnel-pct {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.ai9cb-funnel-desc {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ── Strategy grid ───────────────────────────── */
+.ai9cb-strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.ai9cb-strategy-card {
+  border: 2px solid;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.ai9cb-strategy-card h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.ai9cb-strategy-card p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0 0 8px;
+}
+
+.ai9cb-strategy-card ul {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.ai9cb-strategy-card li {
+  margin-bottom: 3px;
+}
+
+/* ── Settings ────────────────────────────────── */
+.ai9cb-settings-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+
+.ai9cb-tabs {
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  padding: 12px 0;
+}
+
+.ai9cb-tab {
+  display: block;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #334155;
+  text-decoration: none;
+  transition: background .12s, color .12s;
+  border-left: 3px solid transparent;
+}
+
+.ai9cb-tab:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.ai9cb-tab.active {
+  background: #eff6ff;
+  color: #2563eb;
+  border-left-color: #2563eb;
+  font-weight: 600;
+}
+
+.ai9cb-settings-body {
+  padding: 20px 24px;
+}
+
+.ai9cb-section {
+  display: none;
+}
+
+.ai9cb-section.active {
+  display: block;
+}
+
+.ai9cb-section h2 {
+  margin-top: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 16px;
+}
+
+.ai9cb-notice-info {
+  background: #eff6ff;
+  border-left: 4px solid #2563eb;
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  color: #1e40af;
+  margin-bottom: 16px;
+}
+
+.ai9cb-badge-secret {
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.ai9cb-guide {
+  background: #f8fafc;
+}
+
+.ai9cb-guide ol {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.ai9cb-guide code {
+  background: #e2e8f0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* ── Tables ──────────────────────────────────── */
+.ai9cb-table {
+  font-size: 13px;
+}
+
+.ai9cb-table .ai9cb-msg {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai9cb-empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 32px !important;
+}
+
+.ai9cb-urgent-row {
+  background: #fff5f5 !important;
+}
+
+/* ── Badges ──────────────────────────────────── */
+.ai9cb-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.badge-success   { background: #10b981; }
+.badge-secondary { background: #94a3b8; }
+.badge-warning   { background: #f59e0b; }
+.badge-danger    { background: #ef4444; }
+
+.ai9cb-stage-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ── Filter bar ──────────────────────────────── */
+.ai9cb-filter-bar {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 960px) {
+  .ai9cb-charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ai9cb-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai9cb-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .ai9cb-tab {
+    border-left: none;
+    border-bottom: 3px solid transparent;
+  }
+
+  .ai9cb-tab.active {
+    border-left: none;
+    border-bottom-color: #2563eb;
+  }
+}
