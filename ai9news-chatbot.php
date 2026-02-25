@@ -202,13 +202,13 @@ class AI9News_Chatbot {
     // Chat handler
     // ---------------------------------------------------------------
     public function handle_chat( WP_REST_Request $request ) {
-        // Rate limiting — max 30 req / 5 min per IP
-        if ( ! $this->check_rate_limit() ) {
-            return new WP_Error( 'too_many_requests', '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.', [ 'status' => 429 ] );
-        }
-
         $message    = $request->get_param( 'message' );
         $session_id = $request->get_param( 'session_id' );
+
+        $rl_error = $this->check_rate_limit( $session_id );
+        if ( $rl_error ) {
+            return new WP_Error( 'too_many_requests', $rl_error, [ 'status' => 429 ] );
+        }
         $email      = $request->get_param( 'email' ) ?: '';
         $name       = $request->get_param( 'name' ) ?: '';
 
@@ -324,15 +324,82 @@ class AI9News_Chatbot {
         ];
     }
 
-    private function check_rate_limit() {
-        $ip  = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $key = 'ai9cb_rl_' . md5( $ip );
-        $count = (int) get_transient( $key );
-        if ( $count >= 30 ) {
-            return false;
+    /**
+     * 4-layer rate limiting.
+     *
+     * @param  string $session_id  Frontend session ID.
+     * @return string|null  Error message string if blocked, null if allowed.
+     */
+    private function check_rate_limit( $session_id ) {
+        $settings = AI9CB_Settings::get_instance();
+        $ip       = $this->get_client_ip();
+        $today    = gmdate( 'Ymd' );
+
+        // ── Layer 1: short-window (IP) ────────────────────────────────
+        $win_req = max( 1, (int) $settings->get( 'rl_window_requests', 30 ) );
+        $win_min = max( 1, (int) $settings->get( 'rl_window_minutes',  5  ) );
+        $key_win = 'ai9cb_rl_w_' . md5( $ip );
+        $cnt_win = (int) get_transient( $key_win );
+        if ( $cnt_win >= $win_req ) {
+            return "{$win_min}분 내 요청 한도({$win_req}회)를 초과했습니다. 잠시 후 다시 시도해주세요.";
         }
-        set_transient( $key, $count + 1, 5 * MINUTE_IN_SECONDS );
-        return true;
+        set_transient( $key_win, $cnt_win + 1, $win_min * MINUTE_IN_SECONDS );
+
+        // ── Layer 2: daily IP ─────────────────────────────────────────
+        $daily_ip = (int) $settings->get( 'rl_daily_ip', 200 );
+        if ( $daily_ip > 0 ) {
+            $key_dip = 'ai9cb_rl_di_' . md5( $ip ) . '_' . $today;
+            $cnt_dip = (int) get_transient( $key_dip );
+            if ( $cnt_dip >= $daily_ip ) {
+                return "오늘 요청 한도({$daily_ip}회)를 초과했습니다. 내일 다시 이용해주세요.";
+            }
+            set_transient( $key_dip, $cnt_dip + 1, DAY_IN_SECONDS );
+        }
+
+        // ── Layer 3: daily session ────────────────────────────────────
+        $daily_sess = (int) $settings->get( 'rl_daily_session', 50 );
+        if ( $daily_sess > 0 && $session_id ) {
+            $key_ds = 'ai9cb_rl_ds_' . md5( $session_id ) . '_' . $today;
+            $cnt_ds = (int) get_transient( $key_ds );
+            if ( $cnt_ds >= $daily_sess ) {
+                return "세션 일일 요청 한도({$daily_sess}회)를 초과했습니다. 내일 다시 이용해주세요.";
+            }
+            set_transient( $key_ds, $cnt_ds + 1, DAY_IN_SECONDS );
+        }
+
+        // ── Layer 4: daily global (circuit breaker) ───────────────────
+        $daily_global = (int) $settings->get( 'rl_daily_global', 1000 );
+        if ( $daily_global > 0 ) {
+            $key_dg = 'ai9cb_rl_dg_' . $today;
+            $cnt_dg = (int) get_transient( $key_dg );
+            if ( $cnt_dg >= $daily_global ) {
+                error_log( '[AI9CB] 전체 일일 요청 한도 도달: ' . $daily_global );
+                return "서비스 일일 요청 한도에 도달했습니다. 내일 다시 이용해주세요.";
+            }
+            set_transient( $key_dg, $cnt_dg + 1, DAY_IN_SECONDS );
+        }
+
+        return null; // 통과
+    }
+
+    /**
+     * Get real client IP, safely accounting for common reverse-proxy headers.
+     * Falls back to REMOTE_ADDR.
+     */
+    private function get_client_ip() {
+        $candidates = [
+            'HTTP_CF_CONNECTING_IP', // Cloudflare
+            'HTTP_X_REAL_IP',
+        ];
+        foreach ( $candidates as $header ) {
+            if ( ! empty( $_SERVER[ $header ] ) ) {
+                $ip = sanitize_text_field( wp_unslash( $_SERVER[ $header ] ) );
+                if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+                    return $ip;
+                }
+            }
+        }
+        return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? 'unknown' ) );
     }
 }
 

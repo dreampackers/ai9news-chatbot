@@ -85,6 +85,7 @@ class AI9CB_Google_Sheets {
         $settings   = AI9CB_Settings::get_instance();
         $sheet_id   = $settings->get( 'leads_sheet_id' );
         $sheet_name = $settings->get( 'leads_sheet_name', 'Leads' );
+        $site       = $settings->get( 'site_identifier', '' );
 
         if ( empty( $sheet_id ) ) {
             error_log( '[AI9CB] append_lead: leads_sheet_id is not configured.' );
@@ -93,6 +94,7 @@ class AI9CB_Google_Sheets {
 
         return $this->append_row( $sheet_id, $sheet_name, [
             current_time( 'Y-m-d H:i:s' ),
+            $site,
             $email,
             $name,
             $session_id,
@@ -102,7 +104,7 @@ class AI9CB_Google_Sheets {
 
     /**
      * Append a conversation row.
-     * Columns: timestamp | email | user_message | bot_response | sentiment
+     * Columns: timestamp | site | email | user_message | bot_response | sentiment
      *        | input_tokens | output_tokens | model | cost_usd | cost_krw
      *
      * @param string $email
@@ -115,6 +117,7 @@ class AI9CB_Google_Sheets {
         $settings   = AI9CB_Settings::get_instance();
         $sheet_id   = $settings->get( 'leads_sheet_id' );
         $sheet_name = $settings->get( 'conv_sheet_name', 'Conversations' );
+        $site       = $settings->get( 'site_identifier', '' );
 
         if ( empty( $sheet_id ) ) {
             error_log( '[AI9CB] append_conversation: leads_sheet_id is not configured.' );
@@ -129,6 +132,7 @@ class AI9CB_Google_Sheets {
 
         return $this->append_row( $sheet_id, $sheet_name, [
             current_time( 'Y-m-d H:i:s' ),
+            $site,
             $email,
             mb_substr( $user_message, 0, 500 ),
             mb_substr( $bot_response, 0, 1000 ),

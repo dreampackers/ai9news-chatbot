@@ -159,10 +159,11 @@ class AI9CB_Admin_Settings_Page {
         $schema   = $settings->get_schema();
 
         $sections = [
-            'general' => [ 'label' => '기본 설정',             'icon' => '⚙️' ],
-            'ai'      => [ 'label' => 'AI 모델 설정',          'icon' => '🤖' ],
-            'sheets'  => [ 'label' => 'Google Sheets 연동',    'icon' => '📊' ],
-            'notify'  => [ 'label' => '알림 및 연락처 설정',   'icon' => '🔔' ],
+            'general'  => [ 'label' => '기본 설정',             'icon' => '⚙️' ],
+            'ai'       => [ 'label' => 'AI 모델 설정',          'icon' => '🤖' ],
+            'sheets'   => [ 'label' => 'Google Sheets 연동',    'icon' => '📊' ],
+            'notify'   => [ 'label' => '알림 및 연락처 설정',   'icon' => '🔔' ],
+            'security' => [ 'label' => '보안 / 요청 제한',      'icon' => '🛡️' ],
         ];
 
         $saved = get_query_var( 'ai9cb_saved', false );
@@ -197,6 +198,24 @@ class AI9CB_Admin_Settings_Page {
                     <?php if ( $sec_key === 'ai' ) : ?>
                       <div class="ai9cb-notice-info">
                         🔐 API 키는 서버에만 저장되며, 브라우저나 프런트엔드에 절대 노출되지 않습니다.
+                      </div>
+                    <?php endif; ?>
+                    <?php if ( $sec_key === 'security' ) : ?>
+                      <div class="ai9cb-notice-info">
+                        🛡️ <strong>4단계 요청 제한</strong>으로 악의적인 무제한 대화 생성을 방어합니다.<br>
+                        <ul style="margin:8px 0 0 18px;font-size:13px;">
+                          <li><strong>단기 창</strong> — IP당 N분에 M회 초과 시 즉시 차단 (기존 방어)</li>
+                          <li><strong>일일 IP 한도</strong> — 같은 IP가 하루 동안 보낼 수 있는 최대 횟수</li>
+                          <li><strong>일일 세션 한도</strong> — 브라우저 세션 단위 일일 최대 횟수</li>
+                          <li><strong>전체 일일 한도</strong> — 사이트 전체 하루 최대 횟수 (회로 차단기)</li>
+                        </ul>
+                        <p style="margin:8px 0 0;font-size:12px;color:#64748b;">0 입력 시 해당 제한은 비활성화됩니다.</p>
+                      </div>
+                    <?php endif; ?>
+                    <?php if ( $sec_key === 'general' ) : ?>
+                      <div class="ai9cb-notice-info">
+                        🌐 <strong>사이트 구분값(Site ID)</strong>을 입력하면 여러 사이트가 같은 Google Sheet를 공유할 때 각 행에 사이트 출처가 기록됩니다.
+                        예: <code>ai9news</code>, <code>shop</code>, <code>blog</code>
                       </div>
                     <?php endif; ?>
                     <?php if ( $sec_key === 'sheets' ) : ?>
@@ -343,8 +362,8 @@ class AI9CB_Admin_Settings_Page {
                       <thead><tr><th>탭 이름</th><th>용도</th><th>첫 행 헤더</th></tr></thead>
                       <tbody>
                         <tr><td><code>KnowledgeBase</code></td><td>지식베이스</td><td>question, answer, category, tags</td></tr>
-                        <tr><td><code>Leads</code></td><td>리드 저장</td><td>timestamp, email, name, session_id, funnel_stage</td></tr>
-                        <tr><td><code>Conversations</code></td><td>대화 저장</td><td>timestamp, email, user_message, bot_response, sentiment, input_tokens, output_tokens, model, cost_usd, cost_krw</td></tr>
+                        <tr><td><code>Leads</code></td><td>리드 저장</td><td>timestamp, <strong>site</strong>, email, name, session_id, funnel_stage</td></tr>
+                        <tr><td><code>Conversations</code></td><td>대화 저장</td><td>timestamp, <strong>site</strong>, email, user_message, bot_response, sentiment, input_tokens, output_tokens, model, cost_usd, cost_krw</td></tr>
                       </tbody>
                     </table>
                     <p>탭을 하나의 시트에 모두 만들고, 설정에서 지식베이스 시트 ID와 리드 저장 시트 ID를 같은 값으로 입력하면 됩니다.</p>

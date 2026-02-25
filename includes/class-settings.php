@@ -86,6 +86,8 @@ class AI9CB_Settings {
             'email_prompt'      => [ 'label' => '이메일 수집 안내 문구', 'type' => 'textarea', 'default' => '더 나은 지원을 위해 이메일 주소를 알려주시겠어요?', 'section' => 'general' ],
             'primary_color'     => [ 'label' => '메인 컬러',             'type' => 'color',    'default' => '#2563EB', 'section' => 'general' ],
             'bot_avatar'        => [ 'label' => '봇 아바타 URL',         'type' => 'url',      'default' => '',        'section' => 'general' ],
+            // 멀티사이트 구분값: 같은 Google Sheet를 여러 사이트에서 공유할 때 각 행에 기록됩니다.
+            'site_identifier'   => [ 'label' => '사이트 구분값 (Site ID)', 'type' => 'text', 'default' => '', 'section' => 'general' ],
 
             // AI
             'claude_api_key'    => [ 'label' => 'Claude API 키 (비밀)',  'type' => 'password', 'default' => '', 'section' => 'ai', 'secret' => true ],
@@ -115,6 +117,13 @@ class AI9CB_Settings {
             'contact_phone'     => [ 'label' => '긴급 연락처 전화',     'type' => 'text',  'default' => '', 'section' => 'notify' ],
             'contact_email'     => [ 'label' => '긴급 연락처 이메일',   'type' => 'email', 'default' => '', 'section' => 'notify' ],
             'contact_kakao'     => [ 'label' => '카카오톡 채널 URL',    'type' => 'url',   'default' => '', 'section' => 'notify' ],
+
+            // Security — Rate Limiting
+            'rl_window_requests' => [ 'label' => '단기 창 최대 요청 수 (IP당)',              'type' => 'number', 'default' => 30,   'section' => 'security' ],
+            'rl_window_minutes'  => [ 'label' => '단기 창 시간 (분)',                         'type' => 'number', 'default' => 5,    'section' => 'security' ],
+            'rl_daily_ip'        => [ 'label' => '일일 최대 요청 수 — IP당 (0=무제한)',       'type' => 'number', 'default' => 200,  'section' => 'security' ],
+            'rl_daily_session'   => [ 'label' => '일일 최대 요청 수 — 세션당 (0=무제한)',     'type' => 'number', 'default' => 50,   'section' => 'security' ],
+            'rl_daily_global'    => [ 'label' => '전체 사이트 일일 최대 요청 수 (0=무제한)',  'type' => 'number', 'default' => 1000, 'section' => 'security' ],
         ];
     }
 }
