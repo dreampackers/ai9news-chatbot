@@ -135,9 +135,9 @@ class AI9CB_Google_Sheets {
             return [ 'success' => false, 'message' => '서비스 계정 JSON이 입력되지 않았습니다.' ];
         }
 
-        $sa = json_decode( $sa_json, true );
+        $sa = $this->decode_sa_json( $sa_json );
         if ( ! $sa ) {
-            return [ 'success' => false, 'message' => 'JSON 파싱 실패 — JSON 형식을 확인해주세요.' ];
+            return [ 'success' => false, 'message' => 'JSON 파싱 실패 — json_last_error: ' . json_last_error_msg() . ' | 파일을 직접 열어 내용을 복사해주세요.' ];
         }
         if ( empty( $sa['private_key'] ) ) {
             return [ 'success' => false, 'message' => 'JSON에 private_key 항목이 없습니다.' ];
@@ -316,9 +316,9 @@ class AI9CB_Google_Sheets {
             return null;
         }
 
-        $sa = json_decode( $sa_json, true );
+        $sa = $this->decode_sa_json( $sa_json );
         if ( ! $sa ) {
-            error_log( '[AI9CB] Google Sheets: JSON 파싱 실패 — json_last_error: ' . json_last_error_msg() );
+            error_log( '[AI9CB] Google Sheets: JSON 파싱 실패 — json_last_error: ' . json_last_error_msg() . ' | DB 저장값에 슬래시가 포함되어 있을 수 있습니다. 설정을 다시 저장해주세요.' );
             return null;
         }
         if ( empty( $sa['private_key'] ) ) {
@@ -403,6 +403,44 @@ class AI9CB_Google_Sheets {
 
     private function base64url( $data ) {
         return rtrim( strtr( base64_encode( $data ), '+/', '-_' ), '=' );
+    }
+
+    /**
+     * Decode the service-account JSON tolerantly.
+     *
+     * WordPress stores $_POST values with wp_magic_quotes() (addslashes) applied.
+     * If handle_save() was called without wp_unslash() the JSON ends up with
+     * escaped quotes in the DB  →  {"type":"..."} becomes {\"type\":\"...\"}
+     * making json_decode() return null.
+     *
+     * Strategy: try native parse first, then one stripslashes pass, then two.
+     *
+     * @param  string $sa_json  Raw string from settings/DB.
+     * @return array|null  Decoded associative array, or null on failure.
+     */
+    private function decode_sa_json( $sa_json ) {
+        $sa = json_decode( $sa_json, true );
+        if ( is_array( $sa ) && ! empty( $sa ) ) {
+            return $sa;
+        }
+
+        // One level of WordPress magic-quotes slashing
+        $once = stripslashes( $sa_json );
+        $sa   = json_decode( $once, true );
+        if ( is_array( $sa ) && ! empty( $sa ) ) {
+            error_log( '[AI9CB] decode_sa_json: fixed one level of magic-quote slashing.' );
+            return $sa;
+        }
+
+        // Two levels (can happen when already-slashed value is resaved without unslash)
+        $twice = stripslashes( $once );
+        $sa    = json_decode( $twice, true );
+        if ( is_array( $sa ) && ! empty( $sa ) ) {
+            error_log( '[AI9CB] decode_sa_json: fixed two levels of magic-quote slashing.' );
+            return $sa;
+        }
+
+        return null;
     }
 
     /**

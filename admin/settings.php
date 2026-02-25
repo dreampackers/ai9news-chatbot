@@ -333,7 +333,10 @@ class AI9CB_Admin_Settings_Page {
 
         check_admin_referer( 'ai9cb_settings_save', 'ai9cb_nonce' );
 
-        $posted   = $_POST['ai9cb_settings'] ?? [];
+        // FIX: WordPress applies wp_magic_quotes() (addslashes) to all $_POST data.
+        // Without wp_unslash(), JSON gets stored with escaped quotes {"type":...}
+        // breaking json_decode later.
+        $posted   = wp_unslash( $_POST['ai9cb_settings'] ?? [] );
         $settings = AI9CB_Settings::get_instance();
         $schema   = $settings->get_schema();
 
