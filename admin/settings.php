@@ -237,7 +237,7 @@ class AI9CB_Admin_Settings_Page {
                 <?php endforeach; ?>
 
                 <!-- Google Sheets 상세 가이드 (기본 숨김 → 토글로 표시) -->
-                <div id="sheets-guide" class="ai9cb-section ai9cb-guide" style="display:none;">
+                <div id="sheets-guide" class="ai9cb-guide" style="display:none;">
                   <h2>📋 Google 서비스 계정 생성 및 JSON 키 다운로드 — 상세 가이드</h2>
 
                   <div class="ai9cb-guide-step">

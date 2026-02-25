@@ -270,6 +270,10 @@
 
 .ai9cb-guide {
   background: #f8fafc;
+  padding: 20px 24px;
+  margin-top: 16px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
 }
 
 .ai9cb-guide h2 {
