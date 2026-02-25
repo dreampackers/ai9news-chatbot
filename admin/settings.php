@@ -22,6 +22,38 @@ class AI9CB_Admin_Settings_Page {
         add_action( 'admin_menu',            [ $this, 'register_menu' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
         add_action( 'admin_post_ai9cb_save_settings', [ $this, 'handle_save' ] );
+        add_action( 'wp_ajax_ai9cb_test_sheets', [ $this, 'ajax_test_sheets' ] );
+    }
+
+    // ---------------------------------------------------------------
+    // AJAX: test Google Sheets connection
+    // ---------------------------------------------------------------
+    public function ajax_test_sheets() {
+        check_ajax_referer( 'ai9cb_admin', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => '권한이 없습니다.' ], 403 );
+        }
+
+        // If JSON was submitted as part of the test (pre-save), temporarily apply it
+        if ( ! empty( $_POST['credentials_json'] ) ) {
+            $tmp_json = sanitize_textarea_field( wp_unslash( $_POST['credentials_json'] ) );
+            $settings = AI9CB_Settings::get_instance();
+            $original = $settings->get( 'google_sheets_credentials' );
+            $settings->set( 'google_sheets_credentials', $tmp_json );
+            AI9CB_Google_Sheets::clear_cache();
+            $result = AI9CB_Google_Sheets::get_instance()->test_connection();
+            // Restore original
+            $settings->set( 'google_sheets_credentials', $original );
+        } else {
+            AI9CB_Google_Sheets::clear_cache();
+            $result = AI9CB_Google_Sheets::get_instance()->test_connection();
+        }
+
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( $result );
+        }
     }
 
     public function register_menu() {
@@ -165,6 +197,12 @@ class AI9CB_Admin_Settings_Page {
                     <?php if ( $sec_key === 'sheets' ) : ?>
                       <div class="ai9cb-notice-info">
                         📋 Google Sheets 설정 방법: <a href="#sheets-guide">아래 가이드</a> 참조
+                      </div>
+                      <div style="margin-bottom:16px;">
+                        <button type="button" id="ai9cb-test-sheets" class="button button-secondary">
+                          🔌 Google Sheets 연결 테스트
+                        </button>
+                        <span id="ai9cb-test-sheets-result" style="margin-left:10px;font-size:13px;"></span>
                       </div>
                     <?php endif; ?>
 

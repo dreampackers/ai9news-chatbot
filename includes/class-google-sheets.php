@@ -32,8 +32,8 @@ class AI9CB_Google_Sheets {
      * @return array  [['question'=>'...','answer'=>'...'], ...]
      */
     public function get_knowledge_base() {
-        $settings  = AI9CB_Settings::get_instance();
-        $sheet_id  = $settings->get( 'kb_sheet_id' );
+        $settings   = AI9CB_Settings::get_instance();
+        $sheet_id   = $settings->get( 'kb_sheet_id' );
         $sheet_name = $settings->get( 'kb_sheet_name', 'KnowledgeBase' );
 
         if ( empty( $sheet_id ) ) {
@@ -47,11 +47,15 @@ class AI9CB_Google_Sheets {
             return $cached;
         }
 
-        $range  = urlencode( $sheet_name . '!A:D' );
+        // FIX: use rawurlencode for URL path segments
+        $range  = rawurlencode( $sheet_name . '!A:D' );
         $url    = "https://sheets.googleapis.com/v4/spreadsheets/{$sheet_id}/values/{$range}";
         $result = $this->sheets_get( $url );
 
         if ( is_wp_error( $result ) || empty( $result['values'] ) ) {
+            if ( is_wp_error( $result ) ) {
+                error_log( '[AI9CB] get_knowledge_base error: ' . $result->get_error_message() );
+            }
             return [];
         }
 
@@ -83,10 +87,11 @@ class AI9CB_Google_Sheets {
         $sheet_name = $settings->get( 'leads_sheet_name', 'Leads' );
 
         if ( empty( $sheet_id ) ) {
-            return;
+            error_log( '[AI9CB] append_lead: leads_sheet_id is not configured.' );
+            return false;
         }
 
-        $this->append_row( $sheet_id, $sheet_name, [
+        return $this->append_row( $sheet_id, $sheet_name, [
             current_time( 'Y-m-d H:i:s' ),
             $email,
             $name,
@@ -105,31 +110,112 @@ class AI9CB_Google_Sheets {
         $sheet_name = $settings->get( 'conv_sheet_name', 'Conversations' );
 
         if ( empty( $sheet_id ) ) {
-            return;
+            error_log( '[AI9CB] append_conversation: leads_sheet_id is not configured.' );
+            return false;
         }
 
-        $this->append_row( $sheet_id, $sheet_name, [
+        return $this->append_row( $sheet_id, $sheet_name, [
             current_time( 'Y-m-d H:i:s' ),
             $email,
-            mb_substr( $user_message,  0, 500 ),
-            mb_substr( $bot_response,  0, 1000 ),
+            mb_substr( $user_message, 0, 500 ),
+            mb_substr( $bot_response, 0, 1000 ),
             $sentiment,
         ] );
+    }
+
+    /**
+     * Test the connection: token acquisition + read access to the leads sheet.
+     * Returns array with 'success' bool and 'message' string.
+     */
+    public function test_connection() {
+        $settings = AI9CB_Settings::get_instance();
+        $sa_json  = $settings->get( 'google_sheets_credentials' );
+
+        if ( empty( $sa_json ) ) {
+            return [ 'success' => false, 'message' => '서비스 계정 JSON이 입력되지 않았습니다.' ];
+        }
+
+        $sa = json_decode( $sa_json, true );
+        if ( ! $sa ) {
+            return [ 'success' => false, 'message' => 'JSON 파싱 실패 — JSON 형식을 확인해주세요.' ];
+        }
+        if ( empty( $sa['private_key'] ) ) {
+            return [ 'success' => false, 'message' => 'JSON에 private_key 항목이 없습니다.' ];
+        }
+        if ( empty( $sa['client_email'] ) ) {
+            return [ 'success' => false, 'message' => 'JSON에 client_email 항목이 없습니다.' ];
+        }
+
+        // Step 1: obtain token
+        delete_transient( 'ai9cb_gsa_token' );
+        $this->access_token = null;
+        $this->token_exp    = 0;
+
+        $token = $this->get_access_token();
+        if ( ! $token ) {
+            // get_access_token already logged the detail; return last log context
+            return [ 'success' => false, 'message' => 'OAuth 토큰 발급 실패. error_log를 확인하세요. (서비스 계정 이메일 및 키 형식 확인)' ];
+        }
+
+        // Step 2: try to read from the leads sheet
+        $sheet_id   = $settings->get( 'leads_sheet_id' );
+        $sheet_name = $settings->get( 'leads_sheet_name', 'Leads' );
+
+        if ( empty( $sheet_id ) ) {
+            return [ 'success' => true, 'message' => '토큰 발급 성공. (리드 시트 ID 미설정 — 쓰기 테스트 불가)' ];
+        }
+
+        $range  = rawurlencode( $sheet_name . '!A1:A1' );
+        $url    = "https://sheets.googleapis.com/v4/spreadsheets/{$sheet_id}/values/{$range}";
+        $result = $this->sheets_get( $url );
+
+        if ( is_wp_error( $result ) ) {
+            return [ 'success' => false, 'message' => '시트 읽기 실패: ' . $result->get_error_message() ];
+        }
+
+        if ( isset( $result['error'] ) ) {
+            $msg = $result['error']['message'] ?? 'Unknown Sheets error';
+            $code = $result['error']['code'] ?? 0;
+            return [ 'success' => false, 'message' => "Sheets API 오류 ({$code}): {$msg}" ];
+        }
+
+        return [ 'success' => true, 'message' => '연결 성공! 토큰 발급 및 시트 읽기 정상.' ];
     }
 
     // ---------------------------------------------------------------
     // Low-level Google Sheets helpers
     // ---------------------------------------------------------------
 
+    /**
+     * FIX: use rawurlencode (not urlencode) for URL path segments.
+     * FIX: capture and log the response from sheets_post.
+     */
     private function append_row( $sheet_id, $sheet_name, array $values ) {
-        $range  = urlencode( $sheet_name . '!A1' );
-        $url    = "https://sheets.googleapis.com/v4/spreadsheets/{$sheet_id}/values/{$range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS";
+        // FIX: rawurlencode instead of urlencode — handles spaces and special chars in sheet names correctly
+        $range_enc = rawurlencode( $sheet_name . '!A1' );
+        $url       = "https://sheets.googleapis.com/v4/spreadsheets/{$sheet_id}/values/{$range_enc}:append"
+                   . '?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS';
 
-        $this->sheets_post( $url, [
+        $result = $this->sheets_post( $url, [
             'range'          => $sheet_name . '!A1',
             'majorDimension' => 'ROWS',
             'values'         => [ $values ],
         ] );
+
+        // FIX: log any errors returned by sheets_post
+        if ( is_wp_error( $result ) ) {
+            error_log( '[AI9CB] append_row WP error: ' . $result->get_error_message() );
+            return false;
+        }
+
+        if ( isset( $result['error'] ) ) {
+            $code = $result['error']['code']    ?? 0;
+            $msg  = $result['error']['message'] ?? 'Unknown';
+            error_log( "[AI9CB] append_row Sheets API error ({$code}): {$msg} | sheet_id={$sheet_id} tab={$sheet_name}" );
+            return false;
+        }
+
+        return true;
     }
 
     private function sheets_get( $url ) {
@@ -144,19 +230,34 @@ class AI9CB_Google_Sheets {
         ] );
 
         if ( is_wp_error( $response ) ) {
+            error_log( '[AI9CB] sheets_get wp_remote_get error: ' . $response->get_error_message() . ' | url=' . $url );
             return $response;
         }
 
-        return json_decode( wp_remote_retrieve_body( $response ), true );
+        $http_code = wp_remote_retrieve_response_code( $response );
+        $body      = wp_remote_retrieve_body( $response );
+        $data      = json_decode( $body, true );
+
+        if ( $http_code !== 200 ) {
+            $err = $data['error']['message'] ?? $body;
+            error_log( "[AI9CB] sheets_get HTTP {$http_code}: {$err} | url={$url}" );
+        }
+
+        return $data;
     }
 
+    /**
+     * FIX: capture and return the response body so callers can detect errors.
+     * Previously the response was completely ignored.
+     */
     private function sheets_post( $url, $body_data ) {
         $token = $this->get_access_token();
         if ( ! $token ) {
-            return;
+            error_log( '[AI9CB] sheets_post: no access token — skipping write.' );
+            return new WP_Error( 'no_token', '액세스 토큰 없음' );
         }
 
-        wp_remote_post( $url, [
+        $response = wp_remote_post( $url, [
             'timeout' => 15,
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
@@ -164,6 +265,23 @@ class AI9CB_Google_Sheets {
             ],
             'body' => wp_json_encode( $body_data ),
         ] );
+
+        if ( is_wp_error( $response ) ) {
+            error_log( '[AI9CB] sheets_post wp_remote_post error: ' . $response->get_error_message() );
+            return $response;
+        }
+
+        $http_code = wp_remote_retrieve_response_code( $response );
+        $body      = wp_remote_retrieve_body( $response );
+        $data      = json_decode( $body, true );
+
+        // FIX: log non-2xx responses with full details
+        if ( $http_code < 200 || $http_code >= 300 ) {
+            $err = $data['error']['message'] ?? $body;
+            error_log( "[AI9CB] sheets_post HTTP {$http_code}: {$err} | url={$url}" );
+        }
+
+        return $data ?? [];
     }
 
     // ---------------------------------------------------------------
@@ -175,15 +293,17 @@ class AI9CB_Google_Sheets {
      * Tokens are cached in a transient until 60 s before expiry.
      */
     private function get_access_token() {
-        // Return cached token if still valid
-        if ( $this->access_token && time() < $this->token_exp - 60 ) {
+        // In-memory cache: valid only if token_exp is set
+        if ( $this->access_token && $this->token_exp > 0 && time() < $this->token_exp - 60 ) {
             return $this->access_token;
         }
 
         $cache_key    = 'ai9cb_gsa_token';
-        $cached_token = get_transient( $cache_key );
-        if ( $cached_token ) {
-            $this->access_token = $cached_token;
+        $cached       = get_transient( $cache_key );
+        if ( $cached && is_array( $cached ) && ! empty( $cached['token'] ) ) {
+            // FIX: restore token_exp so the in-memory check works on subsequent calls
+            $this->access_token = $cached['token'];
+            $this->token_exp    = $cached['exp'];
             return $this->access_token;
         }
 
@@ -192,18 +312,32 @@ class AI9CB_Google_Sheets {
         $sa_json  = $settings->get( 'google_sheets_credentials' );
 
         if ( empty( $sa_json ) ) {
-            error_log( '[AI9CB] Google Sheets: service account JSON not configured.' );
+            error_log( '[AI9CB] Google Sheets: 서비스 계정 JSON이 설정되지 않았습니다.' );
             return null;
         }
 
         $sa = json_decode( $sa_json, true );
-        if ( ! $sa || empty( $sa['private_key'] ) || empty( $sa['client_email'] ) ) {
-            error_log( '[AI9CB] Google Sheets: invalid service account JSON.' );
+        if ( ! $sa ) {
+            error_log( '[AI9CB] Google Sheets: JSON 파싱 실패 — json_last_error: ' . json_last_error_msg() );
+            return null;
+        }
+        if ( empty( $sa['private_key'] ) ) {
+            error_log( '[AI9CB] Google Sheets: JSON에 private_key 항목 없음.' );
+            return null;
+        }
+        if ( empty( $sa['client_email'] ) ) {
+            error_log( '[AI9CB] Google Sheets: JSON에 client_email 항목 없음.' );
             return null;
         }
 
+        // Ensure the private key has real newlines (handles cases where \n is stored as literal \\n)
+        $private_key = $sa['private_key'];
+        if ( strpos( $private_key, "\\n" ) !== false && strpos( $private_key, "\n" ) === false ) {
+            $private_key = str_replace( '\\n', "\n", $private_key );
+        }
+
         // Build JWT
-        $now    = time();
+        $now     = time();
         $header  = $this->base64url( wp_json_encode( [ 'alg' => 'RS256', 'typ' => 'JWT' ] ) );
         $payload = $this->base64url( wp_json_encode( [
             'iss'   => $sa['client_email'],
@@ -214,16 +348,17 @@ class AI9CB_Google_Sheets {
         ] ) );
 
         $signing_input = $header . '.' . $payload;
-        $key           = openssl_pkey_get_private( $sa['private_key'] );
 
+        $key = openssl_pkey_get_private( $private_key );
         if ( ! $key ) {
-            error_log( '[AI9CB] Google Sheets: could not load private key.' );
+            error_log( '[AI9CB] Google Sheets: openssl_pkey_get_private 실패 — private_key 형식 확인 필요. OpenSSL 오류: ' . openssl_error_string() );
             return null;
         }
 
         $signature = '';
-        if ( ! openssl_sign( $signing_input, $signature, $key, 'SHA256' ) ) {
-            error_log( '[AI9CB] Google Sheets: JWT signing failed.' );
+        // FIX: use OPENSSL_ALGO_SHA256 constant for reliability
+        if ( ! openssl_sign( $signing_input, $signature, $key, OPENSSL_ALGO_SHA256 ) ) {
+            error_log( '[AI9CB] Google Sheets: JWT 서명 실패 — OpenSSL 오류: ' . openssl_error_string() );
             return null;
         }
 
@@ -239,22 +374,29 @@ class AI9CB_Google_Sheets {
         ] );
 
         if ( is_wp_error( $response ) ) {
-            error_log( '[AI9CB] Google OAuth token error: ' . $response->get_error_message() );
+            error_log( '[AI9CB] Google OAuth 요청 실패: ' . $response->get_error_message() );
             return null;
         }
 
-        $data = json_decode( wp_remote_retrieve_body( $response ), true );
+        $http_code = wp_remote_retrieve_response_code( $response );
+        $body      = wp_remote_retrieve_body( $response );
+        $data      = json_decode( $body, true );
 
+        // FIX: log the full error response, not just "no access_token"
         if ( empty( $data['access_token'] ) ) {
-            error_log( '[AI9CB] Google OAuth: no access_token in response.' );
+            $err_type = $data['error']             ?? 'unknown';
+            $err_desc = $data['error_description'] ?? $body;
+            error_log( "[AI9CB] Google OAuth 토큰 발급 실패 (HTTP {$http_code}) — error: {$err_type} | {$err_desc}" );
             return null;
         }
 
         $this->access_token = $data['access_token'];
-        $this->token_exp    = $now + ( (int) ( $data['expires_in'] ?? 3600 ) );
+        $expires_in         = (int) ( $data['expires_in'] ?? 3600 );
+        $this->token_exp    = $now + $expires_in;
 
-        // Cache for (expiry - 60) seconds
-        set_transient( $cache_key, $this->access_token, max( 60, $this->token_exp - $now - 60 ) );
+        // FIX: cache both token and expiry together so token_exp can be restored
+        $ttl = max( 60, $expires_in - 60 );
+        set_transient( $cache_key, [ 'token' => $this->access_token, 'exp' => $this->token_exp ], $ttl );
 
         return $this->access_token;
     }

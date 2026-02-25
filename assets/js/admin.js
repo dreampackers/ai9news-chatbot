@@ -36,6 +36,38 @@
       $('.ai9cb-color-picker').wpColorPicker();
     }
 
+    /* ── Google Sheets 연결 테스트 ─────────────── */
+    $('#ai9cb-test-sheets').on('click', function () {
+      const $btn    = $(this).prop('disabled', true).text('테스트 중...');
+      const $result = $('#ai9cb-test-sheets-result').text('').css('color', '#64748b');
+
+      // Read the currently-entered credentials JSON (even before saving)
+      const credJson = $('#ai9cb_google_sheets_credentials').val() || '';
+
+      $.ajax({
+        url:    ajaxurl,
+        method: 'POST',
+        data: {
+          action:           'ai9cb_test_sheets',
+          nonce:            ai9cbAdmin.nonce,
+          credentials_json: credJson,
+        },
+        success: function (res) {
+          if (res.success) {
+            $result.css('color', '#10b981').text('✅ ' + res.data.message);
+          } else {
+            $result.css('color', '#ef4444').text('❌ ' + (res.data ? res.data.message : '알 수 없는 오류'));
+          }
+        },
+        error: function () {
+          $result.css('color', '#ef4444').text('❌ 요청 실패 — 관리자에게 문의하세요.');
+        },
+        complete: function () {
+          $btn.prop('disabled', false).text('🔌 Google Sheets 연결 테스트');
+        }
+      });
+    });
+
     /* ── Clear cache button ─────────────────── */
     $('#ai9cb-clear-cache').on('click', function () {
       const $btn = $(this).prop('disabled', true).text('삭제 중...');
