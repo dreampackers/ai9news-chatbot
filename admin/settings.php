@@ -116,15 +116,20 @@ class AI9CB_Admin_Settings_Page {
             AI9CB_VERSION
         );
 
+        // FIX: remove wp-color-picker from dependencies so a missing/slow
+        // color-picker script never blocks admin.js from loading.
+        // wp-color-picker is enqueued explicitly below and used conditionally in JS.
         wp_enqueue_script(
             'ai9cb-admin',
             AI9CB_PLUGIN_URL . 'assets/js/admin.js',
-            [ 'jquery', 'wp-color-picker' ],
+            [ 'jquery' ],   // ← was ['jquery','wp-color-picker']
             AI9CB_VERSION,
             true
         );
 
+        // Enqueue color picker assets independently
         wp_enqueue_style( 'wp-color-picker' );
+        wp_enqueue_script( 'wp-color-picker' );
 
         // Chart.js from CDN
         wp_enqueue_script(
