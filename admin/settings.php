@@ -201,7 +201,7 @@ class AI9CB_Admin_Settings_Page {
                     <?php endif; ?>
                     <?php if ( $sec_key === 'sheets' ) : ?>
                       <div class="ai9cb-notice-info">
-                        📋 Google Sheets 설정 방법: <a href="#sheets-guide">아래 가이드</a> 참조
+                        📋 Google Sheets 설정 방법: <a href="#" id="ai9cb-guide-toggle" style="font-weight:600;">아래 가이드 ▼</a> 참조
                       </div>
                       <div style="margin-bottom:16px;">
                         <button type="button" id="ai9cb-test-sheets" class="button button-secondary">
@@ -236,34 +236,133 @@ class AI9CB_Admin_Settings_Page {
                   </div>
                 <?php endforeach; ?>
 
-                <!-- Google Sheets guide -->
-                <div id="sheets-guide" class="ai9cb-section ai9cb-guide">
-                  <h2>📋 Google Sheets 설정 가이드</h2>
-                  <ol>
-                    <li><strong>Google Cloud Console</strong>에서 프로젝트를 생성합니다.</li>
-                    <li><strong>Google Sheets API</strong>를 활성화합니다.</li>
-                    <li><strong>서비스 계정</strong>을 생성하고 <strong>JSON 키</strong>를 다운로드합니다.</li>
-                    <li>다운로드한 JSON 내용을 위 <em>서비스 계정 JSON</em> 필드에 붙여넣습니다.</li>
-                    <li>Google 스프레드시트를 열고 <strong>서비스 계정 이메일</strong>을 편집자로 공유합니다.</li>
-                    <li>스프레드시트 URL의 <code>/spreadsheets/d/[여기]/edit</code> 부분이 <strong>시트 ID</strong>입니다.</li>
-                  </ol>
-                  <h3>지식베이스 시트 형식 (KnowledgeBase 탭)</h3>
-                  <table class="widefat">
-                    <thead><tr><th>question</th><th>answer</th><th>category</th><th>tags</th></tr></thead>
-                    <tbody>
-                      <tr><td>AI9News는 어떤 미디어인가요?</td><td>AI9News는 AI 및 테크 전문 미디어입니다...</td><td>브랜드</td><td>소개,about</td></tr>
-                    </tbody>
-                  </table>
-                  <h3>리드 시트 형식 (Leads 탭)</h3>
-                  <table class="widefat">
-                    <thead><tr><th>timestamp</th><th>email</th><th>name</th><th>session_id</th><th>funnel_stage</th></tr></thead>
-                    <tbody><tr><td colspan="5">(자동 생성됩니다)</td></tr></tbody>
-                  </table>
-                  <h3>대화 시트 형식 (Conversations 탭)</h3>
-                  <table class="widefat">
-                    <thead><tr><th>timestamp</th><th>email</th><th>user_message</th><th>bot_response</th><th>sentiment</th></tr></thead>
-                    <tbody><tr><td colspan="5">(자동 생성됩니다)</td></tr></tbody>
-                  </table>
+                <!-- Google Sheets 상세 가이드 (기본 숨김 → 토글로 표시) -->
+                <div id="sheets-guide" class="ai9cb-section ai9cb-guide" style="display:none;">
+                  <h2>📋 Google 서비스 계정 생성 및 JSON 키 다운로드 — 상세 가이드</h2>
+
+                  <div class="ai9cb-guide-step">
+                    <h3>STEP 1 — Google Cloud 프로젝트 생성</h3>
+                    <ol>
+                      <li><a href="https://console.cloud.google.com" target="_blank" rel="noopener">https://console.cloud.google.com</a> 접속 (Google 계정 로그인)</li>
+                      <li>상단 프로젝트 선택 드롭다운 클릭 → <strong>새 프로젝트</strong>
+                        <div class="ai9cb-guide-box">
+                          프로젝트 이름: <code>ai9news-chatbot</code> ← 원하는 이름 입력<br>
+                          위치: 조직 없음 (기본값)
+                        </div>
+                      </li>
+                      <li><strong>만들기</strong> 클릭 → 생성 완료까지 10~20초 대기</li>
+                    </ol>
+                  </div>
+
+                  <div class="ai9cb-guide-step">
+                    <h3>STEP 2 — Google Sheets API 활성화</h3>
+                    <ol>
+                      <li>좌측 메뉴 → <strong>API 및 서비스</strong> → <strong>라이브러리</strong></li>
+                      <li>검색창에 <code>Google Sheets API</code> 입력</li>
+                      <li>결과 클릭 → <strong>사용 설정</strong> 버튼 클릭</li>
+                    </ol>
+                    <div class="ai9cb-guide-warn">⚠️ 이 단계를 빠뜨리면 나중에 "API not enabled" 오류가 납니다.</div>
+                  </div>
+
+                  <div class="ai9cb-guide-step">
+                    <h3>STEP 3 — 서비스 계정 생성</h3>
+                    <ol>
+                      <li>좌측 메뉴 → <strong>API 및 서비스</strong> → <strong>사용자 인증 정보</strong></li>
+                      <li>상단 <strong>+ 사용자 인증 정보 만들기</strong> → <strong>서비스 계정</strong> 선택
+                        <div class="ai9cb-guide-box">
+                          서비스 계정 이름: <code>ai9news-chatbot-sheets</code><br>
+                          서비스 계정 ID:   <code>ai9news-chatbot-sheets</code> ← 자동 입력됨<br>
+                          설명:             <code>AI9News 챗봇 Sheets 연동</code>
+                        </div>
+                      </li>
+                      <li><strong>만들기 및 계속</strong> 클릭</li>
+                      <li>역할 선택 단계 → <strong>편집자</strong> 선택 → <strong>계속</strong> 클릭</li>
+                      <li><strong>완료</strong> 클릭</li>
+                    </ol>
+                  </div>
+
+                  <div class="ai9cb-guide-step">
+                    <h3>STEP 4 — JSON 키 다운로드</h3>
+                    <ol>
+                      <li>방금 만든 서비스 계정 이름 클릭</li>
+                      <li>상단 탭 <strong>키</strong> 클릭</li>
+                      <li><strong>키 추가</strong> → <strong>새 키 만들기</strong> 클릭</li>
+                      <li>키 유형: <strong>JSON</strong> 선택 → <strong>만들기</strong> 클릭</li>
+                      <li>JSON 파일이 자동으로 다운로드됨</li>
+                    </ol>
+                    <p>다운로드된 JSON 파일 내용 예시:</p>
+                    <pre class="ai9cb-guide-code">{
+  "type": "service_account",
+  "project_id": "ai9news-chatbot",
+  "private_key_id": "abc123...",
+  "private_key": "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----\n",
+  "client_email": "ai9news-chatbot-sheets@ai9news-chatbot.iam.gserviceaccount.com",
+  "client_id": "1234567890",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  ...
+}</pre>
+                    <div class="ai9cb-guide-warn">🔐 이 파일은 비밀번호와 같습니다. 외부에 절대 공유하지 마세요.</div>
+                  </div>
+
+                  <div class="ai9cb-guide-step">
+                    <h3>STEP 5 — 스프레드시트에 서비스 계정 공유</h3>
+                    <ol>
+                      <li>사용할 Google 스프레드시트 열기</li>
+                      <li>우측 상단 <strong>공유</strong> 버튼 클릭</li>
+                      <li>JSON 파일 안의 <code>client_email</code> 값 복사해서 붙여넣기
+                        <div class="ai9cb-guide-box">
+                          예: <code>ai9news-chatbot-sheets@ai9news-chatbot.iam.gserviceaccount.com</code>
+                        </div>
+                      </li>
+                      <li>권한: <strong>편집자</strong> 선택 → <strong>보내기</strong> 클릭</li>
+                    </ol>
+                  </div>
+
+                  <div class="ai9cb-guide-step">
+                    <h3>STEP 6 — 플러그인 설정 페이지에 입력</h3>
+                    <p>워드프레스 관리자 → AI9 챗봇 → 설정 → Google Sheets 연동 탭</p>
+                    <table class="widefat">
+                      <thead><tr><th>항목</th><th>입력값</th></tr></thead>
+                      <tbody>
+                        <tr><td>Google 서비스 계정 JSON</td><td>JSON 파일 전체 내용을 복사해서 붙여넣기</td></tr>
+                        <tr><td>지식베이스 시트 ID</td><td>스프레드시트 URL에서 추출 (아래 참조)</td></tr>
+                        <tr><td>리드 저장 시트 ID</td><td>동일하거나 별도 시트 ID</td></tr>
+                      </tbody>
+                    </table>
+                    <p style="margin-top:12px;"><strong>시트 ID 찾는 방법:</strong></p>
+                    <div class="ai9cb-guide-box" style="font-family:monospace;">
+                      URL: https://docs.google.com/spreadsheets/d/<strong>[여기가_시트_ID]</strong>/edit#gid=0<br>
+                      예: <code>1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</code>
+                    </div>
+                  </div>
+
+                  <div class="ai9cb-guide-step">
+                    <h3>스프레드시트 탭 구성 권장</h3>
+                    <table class="widefat">
+                      <thead><tr><th>탭 이름</th><th>용도</th><th>첫 행 헤더</th></tr></thead>
+                      <tbody>
+                        <tr><td><code>KnowledgeBase</code></td><td>지식베이스</td><td>question, answer, category, tags</td></tr>
+                        <tr><td><code>Leads</code></td><td>리드 저장</td><td>자동 생성</td></tr>
+                        <tr><td><code>Conversations</code></td><td>대화 저장</td><td>자동 생성</td></tr>
+                      </tbody>
+                    </table>
+                    <p>탭을 하나의 시트에 모두 만들고, 설정에서 지식베이스 시트 ID와 리드 저장 시트 ID를 같은 값으로 입력하면 됩니다.</p>
+                  </div>
+
+                  <div class="ai9cb-guide-step">
+                    <h3>자주 발생하는 오류</h3>
+                    <table class="widefat">
+                      <thead><tr><th>오류</th><th>원인</th><th>해결</th></tr></thead>
+                      <tbody>
+                        <tr><td><code>API not enabled</code></td><td>Sheets API 미활성화</td><td>STEP 2 반복</td></tr>
+                        <tr><td><code>Permission denied</code></td><td>시트 공유 안 됨</td><td>STEP 5 반복</td></tr>
+                        <tr><td><code>Invalid credentials</code></td><td>JSON이 잘못 입력됨</td><td>JSON 전체를 다시 복사 붙여넣기</td></tr>
+                        <tr><td><code>Spreadsheet not found</code></td><td>시트 ID 오류</td><td>URL에서 ID 재확인</td></tr>
+                      </tbody>
+                    </table>
+                    <p style="margin-top:10px;">설정 후 <strong>캐시 삭제</strong> 버튼을 한 번 눌러주면 즉시 반영됩니다.</p>
+                  </div>
                 </div>
 
                 <p class="submit" style="margin-top:24px;">

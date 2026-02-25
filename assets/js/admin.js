@@ -42,6 +42,21 @@
       $('.ai9cb-color-picker').wpColorPicker();
     }
 
+    /* ── Sheets guide toggle ────────────────────── */
+    $(document).on('click', '#ai9cb-guide-toggle', function (e) {
+      e.preventDefault();
+      var $guide = $('#sheets-guide');
+      var $link  = $(this);
+      if ($guide.is(':visible')) {
+        $guide.slideUp(200);
+        $link.text('아래 가이드 ▼');
+      } else {
+        $guide.slideDown(300);
+        $link.text('아래 가이드 ▲');
+        $('html, body').animate({ scrollTop: $guide.offset().top - 40 }, 400);
+      }
+    });
+
     /* ── Clear cache button ─────────────────────── */
     $('#ai9cb-clear-cache').on('click', function () {
       var $btn = $(this).prop('disabled', true).text('삭제 중...');

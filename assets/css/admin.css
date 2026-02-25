@@ -272,6 +272,13 @@
   background: #f8fafc;
 }
 
+.ai9cb-guide h2 {
+  font-size: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
 .ai9cb-guide ol {
   font-size: 13px;
   line-height: 1.7;
@@ -282,6 +289,68 @@
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 12px;
+}
+
+.ai9cb-guide-step {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e8ecf0;
+}
+
+.ai9cb-guide-step:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.ai9cb-guide-step h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a3d6b;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  background: #e8f0fe;
+  border-left: 4px solid #4285f4;
+  border-radius: 0 4px 4px 0;
+}
+
+.ai9cb-guide-box {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 8px 0 8px 20px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.ai9cb-guide-warn {
+  background: #fff8e1;
+  border-left: 4px solid #f59e0b;
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-size: 13px;
+  border-radius: 0 4px 4px 0;
+}
+
+.ai9cb-guide-code {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 14px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 8px 0;
+}
+
+#ai9cb-guide-toggle {
+  text-decoration: none;
+  color: #2271b1;
+}
+
+#ai9cb-guide-toggle:hover {
+  text-decoration: underline;
 }
 
 /* ── Tables ──────────────────────────────────── */
