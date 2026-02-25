@@ -343,8 +343,8 @@ class AI9CB_Admin_Settings_Page {
                       <thead><tr><th>탭 이름</th><th>용도</th><th>첫 행 헤더</th></tr></thead>
                       <tbody>
                         <tr><td><code>KnowledgeBase</code></td><td>지식베이스</td><td>question, answer, category, tags</td></tr>
-                        <tr><td><code>Leads</code></td><td>리드 저장</td><td>자동 생성</td></tr>
-                        <tr><td><code>Conversations</code></td><td>대화 저장</td><td>자동 생성</td></tr>
+                        <tr><td><code>Leads</code></td><td>리드 저장</td><td>timestamp, email, name, session_id, funnel_stage</td></tr>
+                        <tr><td><code>Conversations</code></td><td>대화 저장</td><td>timestamp, email, user_message, bot_response, sentiment, input_tokens, output_tokens, model, cost_usd, cost_krw</td></tr>
                       </tbody>
                     </table>
                     <p>탭을 하나의 시트에 모두 만들고, 설정에서 지식베이스 시트 ID와 리드 저장 시트 ID를 같은 값으로 입력하면 됩니다.</p>

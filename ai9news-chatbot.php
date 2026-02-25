@@ -299,7 +299,11 @@ class AI9News_Chatbot {
         // Save to Google Sheets
         $sheets = AI9CB_Google_Sheets::get_instance();
         $email  = $this->get_lead_email( $lead_id );
-        $sheets->append_conversation( $email, $message, $response['bot_response'], $response['sentiment'] );
+        $sheets->append_conversation( $email, $message, $response['bot_response'], $response['sentiment'], [
+            'input_tokens'  => $response['input_tokens']  ?? 0,
+            'output_tokens' => $response['output_tokens'] ?? 0,
+            'model'         => $response['model']         ?? '',
+        ] );
     }
 
     private function get_lead_email( $lead_id ) {

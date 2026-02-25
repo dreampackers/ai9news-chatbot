@@ -103,8 +103,15 @@ class AI9CB_Google_Sheets {
     /**
      * Append a conversation row.
      * Columns: timestamp | email | user_message | bot_response | sentiment
+     *        | input_tokens | output_tokens | model | cost_usd | cost_krw
+     *
+     * @param string $email
+     * @param string $user_message
+     * @param string $bot_response
+     * @param string $sentiment
+     * @param array  $usage  Keys: input_tokens, output_tokens, model
      */
-    public function append_conversation( $email, $user_message, $bot_response, $sentiment ) {
+    public function append_conversation( $email, $user_message, $bot_response, $sentiment, $usage = [] ) {
         $settings   = AI9CB_Settings::get_instance();
         $sheet_id   = $settings->get( 'leads_sheet_id' );
         $sheet_name = $settings->get( 'conv_sheet_name', 'Conversations' );
@@ -114,13 +121,68 @@ class AI9CB_Google_Sheets {
             return false;
         }
 
+        $input_tokens  = (int) ( $usage['input_tokens']  ?? 0 );
+        $output_tokens = (int) ( $usage['output_tokens'] ?? 0 );
+        $model         = $usage['model'] ?? '';
+
+        [ $cost_usd, $cost_krw ] = $this->calc_token_cost( $model, $input_tokens, $output_tokens );
+
         return $this->append_row( $sheet_id, $sheet_name, [
             current_time( 'Y-m-d H:i:s' ),
             $email,
             mb_substr( $user_message, 0, 500 ),
             mb_substr( $bot_response, 0, 1000 ),
             $sentiment,
+            $input_tokens,
+            $output_tokens,
+            $model,
+            number_format( $cost_usd, 6, '.', '' ),
+            number_format( $cost_krw, 2,  '.', '' ),
         ] );
+    }
+
+    /**
+     * Calculate API cost for a single request.
+     *
+     * Pricing table (USD per 1 M tokens, Anthropic 2025):
+     *   claude-opus-4-6   : in $15.00 / out $75.00
+     *   claude-sonnet-4-6 : in  $3.00 / out $15.00
+     *   claude-haiku-4    : in  $0.80 / out  $4.00
+     *
+     * @param  string $model
+     * @param  int    $input_tokens
+     * @param  int    $output_tokens
+     * @return array  [ float $cost_usd, float $cost_krw ]
+     */
+    private function calc_token_cost( $model, $input_tokens, $output_tokens ) {
+        // USD per 1,000,000 tokens  [ input_rate, output_rate ]
+        $pricing = [
+            'claude-opus-4-6'   => [ 15.00, 75.00 ],
+            'claude-sonnet-4-6' => [  3.00, 15.00 ],
+            'claude-haiku-4'    => [  0.80,  4.00 ],
+        ];
+
+        $rates = null;
+        // Exact match first, then prefix match (handles versioned IDs like claude-haiku-4-5-20251001)
+        if ( isset( $pricing[ $model ] ) ) {
+            $rates = $pricing[ $model ];
+        } else {
+            foreach ( $pricing as $key => $p ) {
+                if ( strpos( $model, $key ) === 0 ) {
+                    $rates = $p;
+                    break;
+                }
+            }
+        }
+
+        if ( ! $rates ) {
+            return [ 0.0, 0.0 ];
+        }
+
+        $cost_usd = ( $input_tokens * $rates[0] + $output_tokens * $rates[1] ) / 1_000_000;
+        $cost_krw = $cost_usd * 1400; // 1 USD ≈ 1,400 KRW (업데이트 필요 시 수정)
+
+        return [ $cost_usd, $cost_krw ];
     }
 
     /**

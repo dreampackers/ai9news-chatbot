@@ -88,6 +88,7 @@ class AI9CB_Chatbot_API {
         }
 
         $bot_response = trim( $data['content'][0]['text'] );
+        $usage        = $data['usage'] ?? [];
 
         // Sentiment analysis (second Claude call, lightweight)
         $sentiment_data = $this->analyse_sentiment( $user_message );
@@ -97,6 +98,9 @@ class AI9CB_Chatbot_API {
             'sentiment'       => $sentiment_data['label'],
             'sentiment_score' => $sentiment_data['score'],
             'is_urgent'       => $sentiment_data['is_urgent'],
+            'input_tokens'    => (int) ( $usage['input_tokens']  ?? 0 ),
+            'output_tokens'   => (int) ( $usage['output_tokens'] ?? 0 ),
+            'model'           => $model,
         ];
     }
 
