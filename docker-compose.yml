@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wpuser
+      MYSQL_PASSWORD: wppass
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  wordpress:
+    image: wordpress:6.6-php8.2-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppass
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "1"
+    volumes:
+      - wp_data:/var/www/html
+      - .:/var/www/html/wp-content/plugins/ai9news-chatbot:ro
+    restart: unless-stopped
+
+  wpcli:
+    image: wordpress:cli-php8.2
+    depends_on:
+      - wordpress
+    volumes:
+      - wp_data:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppass
+      WORDPRESS_DB_NAME: wordpress
+    entrypoint: ["sh", "-c", "
+      echo 'Waiting for WordPress...' &&
+      sleep 10 &&
+      wp core install
+        --allow-root
+        --url=http://localhost:8080
+        --title='AI9News Test'
+        --admin_user=admin
+        --admin_password=admin123
+        --admin_email=test@test.com
+        --skip-email 2>/dev/null || true &&
+      wp plugin activate ai9news-chatbot --allow-root 2>/dev/null || true &&
+      echo '=== WordPress setup complete ===' &&
+      echo '  URL:      http://localhost:8080' &&
+      echo '  Admin:    http://localhost:8080/wp-admin' &&
+      echo '  User:     admin / admin123'
+    "]
+
+volumes:
+  db_data:
+  wp_data:
